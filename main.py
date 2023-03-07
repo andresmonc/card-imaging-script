@@ -2,6 +2,8 @@ import itertools
 
 import cv2
 import os
+import sys
+
 from imutils import contours
 
 
@@ -42,7 +44,7 @@ def convert(image_file_name, identifier, file_count):
             row = []
 
     cntrs = checkerboard_row
-
+    path = determine_path()
     for i in range(len(cntrs)):
         contour = cntrs[i]
         contour_area = cv2.contourArea(contour)
@@ -64,7 +66,8 @@ def convert(image_file_name, identifier, file_count):
 
         # Save the rectangle with border as a separate image file
 
-        cv2.imwrite("./output/output_image_{}_{}.png".format(valid_image_counter, identifier), rect_with_border)
+        cv2.imwrite("{}/output/output_image_{}_{}.png".format(path, valid_image_counter, identifier),
+                    rect_with_border)
         # increase count
         valid_image_counter += 1
 
@@ -80,7 +83,7 @@ def filter_contours_by_area(contours, min_contour_area):
 
 def list_input_files():
     input_files = []
-    input_dir = "./input"
+    input_dir = application_path + "/input"
     files = os.listdir(input_dir)
     for file in files:
         if not file.startswith('.'):
@@ -92,16 +95,26 @@ def list_input_files():
 
 
 def list_output_files():
-    output_dir = "./output"
+    output_dir = determine_path() + "/output"
     files = os.listdir(output_dir)
     return files
+
+
+def determine_path():
+    # determine if application is a script file or frozen exe
+    application_path = ""
+    if getattr(sys, 'frozen', False):
+        application_path = os.path.dirname(sys.executable)
+    elif __file__:
+        application_path = os.path.dirname(__file__)
+    return application_path
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     output_start_index = len(list_output_files()) // 2
     a_or_b = "a"
+    application_path = determine_path()
     for file in list_input_files():
-        convert("./input/" + file, a_or_b, output_start_index)
+        convert(application_path + "/input/" + file, a_or_b, output_start_index)
         a_or_b = "b"
-
