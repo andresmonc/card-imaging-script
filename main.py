@@ -8,7 +8,7 @@ from imutils import contours
 
 
 def convert(image_file_name, identifier, file_count):
-    # Mat image = Imgcodecs.imread(file.getAbsolutePath())
+    # Load image
     image = cv2.imread(image_file_name)
     # Convert the image to grayscale
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
