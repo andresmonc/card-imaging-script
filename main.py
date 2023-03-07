@@ -82,9 +82,9 @@ def list_input_files():
     input_files = []
     input_dir = os.path.join(determine_path(), "input")
     files = os.listdir(input_dir)
-    for file in files:
-        if not file.startswith('.'):
-            input_files.append(file)
+    for input_file in files:
+        if not input_file.startswith('.'):
+            input_files.append(input_file)
     num_files = len(input_files)
     if num_files > 2:
         raise ValueError(f"There are {num_files} files in {input_dir}. There should be at most 2 files.")
@@ -111,7 +111,7 @@ def determine_path():
 if __name__ == '__main__':
     output_start_index = len(list_output_files()) // 2
     a_or_b = "a"
-    application_path = determine_path()
+    app_path = determine_path()
     for file in list_input_files():
-        convert(os.path.join(application_path, "input", file), a_or_b, output_start_index)
+        convert(os.path.join(app_path, "input", file), a_or_b, output_start_index)
         a_or_b = "b"
