@@ -72,9 +72,9 @@ def convert(image_file_name, identifier, file_count):
         valid_image_counter += 1
 
 
-def filter_contours_by_area(contours, min_contour_area):
+def filter_contours_by_area(image_contours, min_contour_area):
     filtered_contours = []
-    for contour in contours:
+    for contour in image_contours:
         contour_area = cv2.contourArea(contour)
         if contour_area >= min_contour_area:
             filtered_contours.append(contour)
