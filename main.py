@@ -1,5 +1,3 @@
-import itertools
-
 import cv2
 import os
 import sys
@@ -65,9 +63,8 @@ def convert(image_file_name, identifier, file_count):
                                               cv2.BORDER_CONSTANT, value=(255, 255, 255))
 
         # Save the rectangle with border as a separate image file
-
-        cv2.imwrite("{}/output/output_image_{}_{}.png".format(path, valid_image_counter, identifier),
-                    rect_with_border)
+        file_name = os.path.join(path, "output", "output_image_{}_{}.png".format(valid_image_counter, identifier))
+        cv2.imwrite(file_name, rect_with_border)
         # increase count
         valid_image_counter += 1
 
@@ -83,7 +80,7 @@ def filter_contours_by_area(image_contours, min_contour_area):
 
 def list_input_files():
     input_files = []
-    input_dir = application_path + "/input"
+    input_dir = os.path.join(determine_path(), "input")
     files = os.listdir(input_dir)
     for file in files:
         if not file.startswith('.'):
@@ -95,7 +92,7 @@ def list_input_files():
 
 
 def list_output_files():
-    output_dir = determine_path() + "/output"
+    output_dir = os.path.join(determine_path(), "output")
     files = os.listdir(output_dir)
     return files
 
@@ -116,5 +113,5 @@ if __name__ == '__main__':
     a_or_b = "a"
     application_path = determine_path()
     for file in list_input_files():
-        convert(application_path + "/input/" + file, a_or_b, output_start_index)
+        convert(os.path.join(application_path, "input", file), a_or_b, output_start_index)
         a_or_b = "b"
