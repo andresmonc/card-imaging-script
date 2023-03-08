@@ -10,14 +10,17 @@ def convert(image_file_name, identifier, file_count):
     image = cv2.imread(image_file_name)
     # Convert the image to grayscale
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    cv2.imwrite("gray.png", gray_image)
 
     # Apply a threshold to convert the image to black and white
     threshold_value = 242
     max_value = 255
-    threshold_type = cv2.THRESH_BINARY_INV
+    threshold_type = cv2.THRESH_OTSU
     _, threshold_image = cv2.threshold(gray_image, threshold_value, max_value, threshold_type)
     # Find contours in the thresholded image
     cntrs, hierarchy = cv2.findContours(threshold_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # todo temp
+    cv2.imwrite("thresh.png", threshold_image)
 
     # Set the amount of empty space to add around the cropped image
     empty_space = 30
@@ -60,7 +63,7 @@ def convert(image_file_name, identifier, file_count):
 
         # Add empty space around the rect
         rect_with_border = cv2.copyMakeBorder(rect, empty_space * 2, empty_space * 2, empty_space * 2, empty_space * 2,
-                                              cv2.BORDER_CONSTANT, value=(255, 255, 255))
+                                              cv2.BORDER_CONSTANT, value=(0, 0, 0))
 
         # Save the rectangle with border as a separate image file
         file_name = os.path.join(path, "output", "output_image_{}_{}.png".format(valid_image_counter, identifier))
