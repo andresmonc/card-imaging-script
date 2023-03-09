@@ -10,7 +10,7 @@ def convert(image_file_name, identifier, file_count):
     image = cv2.imread(image_file_name)
     # Convert the image to grayscale
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    cv2.imwrite("gray.png", gray_image)
+    # cv2.imwrite("gray.png", gray_image)
 
     # Apply a threshold to convert the image to black and white
     threshold_value = 242
@@ -19,8 +19,7 @@ def convert(image_file_name, identifier, file_count):
     _, threshold_image = cv2.threshold(gray_image, threshold_value, max_value, threshold_type)
     # Find contours in the thresholded image
     cntrs, hierarchy = cv2.findContours(threshold_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    # todo temp
-    cv2.imwrite("thresh.png", threshold_image)
+    # cv2.imwrite("thresh.png", threshold_image)
 
     # Set the amount of empty space to add around the cropped image
     empty_space = 30
@@ -35,16 +34,31 @@ def convert(image_file_name, identifier, file_count):
     # Sort the contours by their position from top to bottom
     cntrs, _ = contours.sort_contours(cntrs, method="top-to-bottom")
 
+    # identify count of contours per row
+    count_per_row = 0
+    (_, random_y, _, random_h) = cv2.boundingRect(cntrs[0])
+    y_value = random_y + (random_h/2)
+    for contour in cntrs:
+        (x, y, w, h) = cv2.boundingRect(contour)
+        if y <= y_value <= y + h:
+            count_per_row += 1
+
+    # Sort the grid of photos left to right
     checkerboard_row = []
     row = []
     for (i, c) in enumerate(cntrs, 1):
         row.append(c)
-        if i % 3 == 0:
+        if i % count_per_row == 0:
             (cnts, _) = contours.sort_contours(row, method="left-to-right")
             checkerboard_row.extend(cnts)
             row = []
+    if len(row) != 0:
+        (cnts, _) = contours.sort_contours(row, method="left-to-right")
+        checkerboard_row.extend(cnts)
+        row = []
 
     cntrs = checkerboard_row
+
     path = determine_path()
     for i in range(len(cntrs)):
         contour = cntrs[i]
