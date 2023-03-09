@@ -7,4 +7,4 @@ image files.
 
 - Place the 2 scans (front/back) in input
 - Run the script
-- Enjoy your split photos 
+- Enjoy your split photos (saved in output)
