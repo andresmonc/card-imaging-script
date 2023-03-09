@@ -1,6 +1,6 @@
 # card-imaging-script
 
-This script detects playing cards against a white background and splits them out into multiple organized front/back(A/B)
+This script detects playing cards against a black background and splits them out into multiple organized front/back(A/B)
 image files.
 
 # How to Use
