@@ -1,16 +1,19 @@
 import cv2
 import os
 import sys
+import numpy as np
 
 from imutils import contours
+
+attempt = 1
 
 
 def convert(image_file_name, identifier, file_count):
     # Load Pure Image (never modify)
     image = cv2.imread(image_file_name)
     # try to bright/contrast image
-    alpha = 2.5  # Contrast control (1.0-3.0)
-    beta = 25  # Brightness control (0-100)
+    alpha = 1.0  # Contrast control (1.0-3.0)
+    beta = 10  # Brightness control (0-100)
     bright_image = cv2.imread(image_file_name)
     bright_image = cv2.convertScaleAbs(bright_image, alpha=alpha, beta=beta)
     cv2.imwrite("brightness.png", bright_image)
@@ -20,40 +23,33 @@ def convert(image_file_name, identifier, file_count):
     gray_image = cv2.cvtColor(bright_image, cv2.COLOR_BGR2GRAY)
     cv2.imwrite("gray.png", gray_image)
 
-
-
     # Apply a threshold to convert the image to black and white
-    threshold_value = 150
-    max_value = 255
-    threshold_type = cv2.THRESH_OTSU
-    _, threshold_image = cv2.threshold(gray_image, threshold_value, max_value, threshold_type)
+    # threshold_value = 100
+    # max_value = 255
+    # threshold_type = cv2.THRESH_OTSU
+    # _, threshold_image = cv2.threshold(gray_image, threshold_value, max_value, threshold_type)
     # try adaptive threshold
-    # test = cv2.adaptiveThreshold(gray_image, 255, cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY_INV, 151, 5)
-    # cv2.imwrite("test.png", test)
-    # threshold_image = test
+    # works for the set
+    # if attempt == 2:
+    #     print("hi")
+
+    # test = cv2.adaptiveThreshold(gray_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2) # graded and dark
+    # test = cv2.adaptiveThreshold(gray_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV, 21, 2)
+    test = cv2.adaptiveThreshold(gray_image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 21, 2) # graded and dark
+    cv2.imwrite("test.png", test)
+    threshold_image = test
     #
 
-    # Find contours in the thresholded image
-    cntrs, hierarchy = cv2.findContours(threshold_image, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-    cv2.imwrite("thresh.png", threshold_image)
-    print(len(cntrs))
-    # Set the amount of empty space to add around the cropped image
-    empty_space = 30
+    cntrs = get_contours(threshold_image)
 
-    # Area threshold - ignore small contours with area less than min_contour_area (assume noise)
-    min_contour_area = 300000
 
-    valid_image_counter = file_count
-
-    # clean up contours to filter out garbage
-    cntrs = filter_contours_by_area(cntrs, min_contour_area)
     # Sort the contours by their position from top to bottom
     cntrs, _ = contours.sort_contours(cntrs, method="top-to-bottom")
 
     # identify count of contours per row
     count_per_row = 0
     (_, random_y, _, random_h) = cv2.boundingRect(cntrs[0])
-    y_value = random_y + (random_h/2)
+    y_value = random_y + (random_h / 2)
     for contour in cntrs:
         (x, y, w, h) = cv2.boundingRect(contour)
         if y <= y_value <= y + h:
@@ -62,6 +58,7 @@ def convert(image_file_name, identifier, file_count):
     # Sort the grid of photos left to right
     checkerboard_row = []
     row = []
+
     for (i, c) in enumerate(cntrs, 1):
         row.append(c)
         if i % count_per_row == 0:
@@ -75,10 +72,22 @@ def convert(image_file_name, identifier, file_count):
     cntrs = checkerboard_row
 
     path = determine_path()
+    prior_contour_area = 0
+    valid_image_counter = file_count
+    # Set the amount of empty space to add around the cropped image
+    empty_space = 30
+
     for i in range(len(cntrs)):
         contour = cntrs[i]
         # Find the bounding box of the contour
         bounding_rect = cv2.boundingRect(contour)
+
+        # # detect possible errors. Large deviation in areas
+        # contour_area = cv2.contourArea(contour)
+        #     if prior_contour_area != 0 and (prior_contour_area - contour_area):
+        #         global attempt = 1
+        #         return convert()
+
 
         # Crop the rectangle from the original image using the bounding box coordinates
         rect = image[bounding_rect[1]:bounding_rect[1] + bounding_rect[3],
@@ -94,6 +103,18 @@ def convert(image_file_name, identifier, file_count):
         # increase count
         valid_image_counter += 1
 
+def get_contours(threshold):
+    # Find contours in the thresholded image
+    cntrs, hierarchy = cv2.findContours(threshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cv2.imwrite("thresh.png", threshold)
+    print(len(cntrs))
+
+    # Area threshold - ignore small contours with area less than min_contour_area (assume noise)
+    min_contour_area = 320000
+
+    # clean up contours to filter out garbage
+    return filter_contours_by_area(cntrs, min_contour_area)
+
 
 def filter_contours_by_area(image_contours, min_contour_area):
     filtered_contours = []
@@ -102,7 +123,6 @@ def filter_contours_by_area(image_contours, min_contour_area):
         if contour_area >= min_contour_area:
             filtered_contours.append(contour)
     return filtered_contours
-
 
 def list_input_files():
     input_files = []
