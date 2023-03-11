@@ -6,9 +6,9 @@ import statistics
 from imutils import contours
 
 
-def convert(image_file_name, identifier, file_count, attempt):
+def convert(image_file_name, identifier, file_count, attempt, expected_card_count):
     # settings
-    max_attempt_count = 2
+    max_attempt_count = 3
     print("attempt count: " + str(attempt))
 
     if attempt > max_attempt_count:
@@ -16,19 +16,14 @@ def convert(image_file_name, identifier, file_count, attempt):
         exit(1)
     # Load Pure Image (never modify)
     image = cv2.imread(image_file_name)
+
     # try to bright/contrast image
-    alpha = 1.0  # Contrast control (1.0-3.0)
-    beta = 10  # Brightness control (0-100)
-    bright_image = cv2.imread(image_file_name)
-    bright_image = cv2.convertScaleAbs(bright_image, alpha=alpha, beta=beta)
-    cv2.imwrite("brightness.png", bright_image)
-    #
+    modified_image = dynamic_image_modifier(image_file_name, attempt)
 
     # Convert the image to grayscale
-    gray_image = cv2.cvtColor(bright_image, cv2.COLOR_BGR2GRAY)
-    cv2.imwrite("gray.png", gray_image)
+    gray_image = to_grayscale(modified_image)
 
-    threshold_image = dynamic_thresholder(gray_image)
+    threshold_image = dynamic_thresholder(gray_image, attempt)
 
     # get contours from a threshold image
     cntrs = get_contours(threshold_image)
@@ -42,9 +37,9 @@ def convert(image_file_name, identifier, file_count, attempt):
     # Set the amount of empty space to add around the cropped image
     empty_space = 30
 
-    if contour_error(cntrs):
+    if contour_error(cntrs, expected_card_count):
         print("Failure - attempting new configuration")
-        return convert(image_file_name, identifier, file_count, attempt + 1)
+        return convert(image_file_name, identifier, file_count, attempt + 1, expected_card_count)
 
     for i in range(len(cntrs)):
         contour = cntrs[i]
@@ -66,27 +61,51 @@ def convert(image_file_name, identifier, file_count, attempt):
         valid_image_counter += 1
 
 
-def dynamic_thresholder(gray_image_to_threshold):
-    # Apply a threshold to convert the image to black and white
-    # threshold_value = 100
-    # max_value = 255
-    # threshold_type = cv2.THRESH_OTSU
-    # _, threshold_image = cv2.threshold(gray_image_to_threshold, threshold_value, max_value, threshold_type)
-    # try adaptive threshold
-    # works for the set
-    # if attempt == 2:
-    #     print("hi")
+def to_grayscale(image_to_grayscale):
+    gray_image = cv2.cvtColor(image_to_grayscale, cv2.COLOR_BGR2GRAY)
+    # cv2.imwrite("gray.png", gray_image)
+    return gray_image
 
-    # test = cv2.adaptiveThreshold(gray_image_to_threshold, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2) # graded and dark
-    # test = cv2.adaptiveThreshold(gray_image_to_threshold, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV, 21, 2)
-    test = cv2.adaptiveThreshold(gray_image_to_threshold, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 21,
-                                 2)  # graded and dark
-    cv2.imwrite("test.png", test)
-    threshold_image = test
+
+def dynamic_image_modifier(image_to_modify_name, image_modify_attempt_count):
+    brightnesses = [-10, -10, -10, 20]
+    alpha = 2.0  # Contrast control (1.0-3.0)
+    beta = brightnesses[image_modify_attempt_count]  # Brightness control (0-100)
+    modified_image = cv2.convertScaleAbs(cv2.imread(image_to_modify_name), alpha=alpha, beta=beta)
+    # cv2.imwrite("brightness.png", modified_image)
+    if image_modify_attempt_count == 0:
+        bitwise = cv2.bitwise_not(modified_image)
+        # cv2.imwrite("bitwise.png", bitwise)
+        modified_image = bitwise
+    return modified_image
+
+
+def dynamic_thresholder(gray_image_to_threshold, thresholding_attempt_count):
+    # Apply a threshold to convert the image to black and white
+    threshold_value = 241
+    max_value = 255
+    threshold_image = []
+    if thresholding_attempt_count == 0:
+        _, threshold_image = cv2.threshold(gray_image_to_threshold, threshold_value, max_value, cv2.THRESH_BINARY_INV)
+    elif thresholding_attempt_count == 1:
+        _, threshold_image = cv2.threshold(gray_image_to_threshold, threshold_value, max_value, cv2.THRESH_OTSU)
+    elif thresholding_attempt_count == 2:
+        threshold_image = cv2.adaptiveThreshold(gray_image_to_threshold, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                                cv2.THRESH_BINARY_INV, 11, 2)
+    elif thresholding_attempt_count == 3:
+        threshold_image = cv2.adaptiveThreshold(gray_image_to_threshold, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                                cv2.THRESH_BINARY_INV, 21, 2)
+
+    # cv2.imwrite("threshold.png", threshold_image)
     return threshold_image
 
 
-def contour_error(contours_to_check):
+def contour_error(contours_to_check, expected_card_count_to_check):
+    if len(contours_to_check) != expected_card_count_to_check:
+        return True
+    # don't use this program for 1 picture lol
+    if len(contours_to_check) <= 1:
+        return True
     allowed_standard_deviation = 30000
     contour_areas = []
     for i in range(len(contours_to_check)):
@@ -130,10 +149,10 @@ def sort_contours(contours_to_sort):
 def get_contours(threshold):
     # Find contours in the thresholded image
     cntrs, hierarchy = cv2.findContours(threshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cv2.imwrite("thresh.png", threshold)
+    # cv2.imwrite("thresh.png", threshold)
 
     # Area threshold - ignore small contours with area less than min_contour_area (assume noise)
-    min_contour_area = 320000
+    min_contour_area = 420000
 
     # clean up contours to filter out garbage
     return filter_contours_by_area(cntrs, min_contour_area)
@@ -179,9 +198,22 @@ def determine_path():
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+    print("""
+  _____                   _              _           _____                      _____                                              
+ |  __ \                 | |            ( )         |  __ \                    / ____|                                             
+ | |  | |  _   _    ___  | | __  _   _  |/   ___    | |__) |  _ __    ___     | (___     ___    __ _   _ __    _ __     ___   _ __ 
+ | |  | | | | | |  / __| | |/ / | | | |     / __|   |  ___/  | '__|  / _ \     \___ \   / __|  / _` | | '_ \  | '_ \   / _ \ | '__|
+ | |__| | | |_| | | (__  |   <  | |_| |     \__ \   | |      | |    | (_) |    ____) | | (__  | (_| | | | | | | | | | |  __/ | |   
+ |_____/   \__,_|  \___| |_|\_\  \__, |     |___/   |_|      |_|     \___/    |_____/   \___|  \__,_| |_| |_| |_| |_|  \___| |_|   
+                                  __/ |                                                                                            
+                                 |___/                                                                                             
+    """)
+    print("Written by Jaime Moncayo v1.3")
+    card_count = input("Card Count Per Image: ")
     output_start_index = len(list_output_files()) // 2
     a_or_b = "a"
     app_path = determine_path()
     for file in list_input_files():
-        convert(os.path.join(app_path, "input", file), a_or_b, output_start_index, 0)
+        convert(os.path.join(app_path, "input", file), a_or_b, output_start_index, 0, int(card_count))
         a_or_b = "b"
+    input("Press enter to exit...")
