@@ -23,7 +23,7 @@ def convert(image_file_name, identifier, file_count):
 
 
     # Apply a threshold to convert the image to black and white
-    threshold_value = 1
+    threshold_value = 150
     max_value = 255
     threshold_type = cv2.THRESH_OTSU
     _, threshold_image = cv2.threshold(gray_image, threshold_value, max_value, threshold_type)
