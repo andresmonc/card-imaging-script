@@ -216,4 +216,5 @@ if __name__ == '__main__':
     for file in list_input_files():
         convert(os.path.join(app_path, "input", file), a_or_b, output_start_index, 0, int(card_count))
         a_or_b = "b"
+    print("Success!!!")
     input("Press enter to exit...")
