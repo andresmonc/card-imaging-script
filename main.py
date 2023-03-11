@@ -10,7 +10,7 @@ def convert(image_file_name, identifier, file_count):
     image = cv2.imread(image_file_name)
     # try to bright/contrast image
     alpha = 2.5  # Contrast control (1.0-3.0)
-    beta = 20  # Brightness control (0-100)
+    beta = 25  # Brightness control (0-100)
     bright_image = cv2.imread(image_file_name)
     bright_image = cv2.convertScaleAbs(bright_image, alpha=alpha, beta=beta)
     cv2.imwrite("brightness.png", bright_image)
@@ -34,13 +34,13 @@ def convert(image_file_name, identifier, file_count):
     #
 
     # Find contours in the thresholded image
-    cntrs, hierarchy = cv2.findContours(threshold_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    cntrs, hierarchy = cv2.findContours(threshold_image, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
     cv2.imwrite("thresh.png", threshold_image)
-
+    print(len(cntrs))
     # Set the amount of empty space to add around the cropped image
     empty_space = 30
 
-    # Area threshold - ignore small contours with area less than 10000 (assume noise)
+    # Area threshold - ignore small contours with area less than min_contour_area (assume noise)
     min_contour_area = 300000
 
     valid_image_counter = file_count
@@ -71,20 +71,13 @@ def convert(image_file_name, identifier, file_count):
     if len(row) != 0:
         (cnts, _) = contours.sort_contours(row, method="left-to-right")
         checkerboard_row.extend(cnts)
-        row = []
 
     cntrs = checkerboard_row
 
     path = determine_path()
     for i in range(len(cntrs)):
         contour = cntrs[i]
-        contour_area = cv2.contourArea(contour)
-
-        # Ignore small contours with area less than min_contour_area (assume noise)
-        if contour_area < min_contour_area:
-            continue
-
-            # Find the bounding box of the contour
+        # Find the bounding box of the contour
         bounding_rect = cv2.boundingRect(contour)
 
         # Crop the rectangle from the original image using the bounding box coordinates
