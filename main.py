@@ -6,26 +6,42 @@ from imutils import contours
 
 
 def convert(image_file_name, identifier, file_count):
-    # Load image
+    # Load Pure Image (never modify)
     image = cv2.imread(image_file_name)
+    # try to bright/contrast image
+    alpha = 2.5  # Contrast control (1.0-3.0)
+    beta = 20  # Brightness control (0-100)
+    bright_image = cv2.imread(image_file_name)
+    bright_image = cv2.convertScaleAbs(bright_image, alpha=alpha, beta=beta)
+    cv2.imwrite("brightness.png", bright_image)
+    #
+
     # Convert the image to grayscale
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # cv2.imwrite("gray.png", gray_image)
+    gray_image = cv2.cvtColor(bright_image, cv2.COLOR_BGR2GRAY)
+    cv2.imwrite("gray.png", gray_image)
+
+
 
     # Apply a threshold to convert the image to black and white
-    threshold_value = 242
+    threshold_value = 1
     max_value = 255
     threshold_type = cv2.THRESH_OTSU
     _, threshold_image = cv2.threshold(gray_image, threshold_value, max_value, threshold_type)
+    # try adaptive threshold
+    # test = cv2.adaptiveThreshold(gray_image, 255, cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY_INV, 151, 5)
+    # cv2.imwrite("test.png", test)
+    # threshold_image = test
+    #
+
     # Find contours in the thresholded image
-    cntrs, hierarchy = cv2.findContours(threshold_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    # cv2.imwrite("thresh.png", threshold_image)
+    cntrs, hierarchy = cv2.findContours(threshold_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    cv2.imwrite("thresh.png", threshold_image)
 
     # Set the amount of empty space to add around the cropped image
     empty_space = 30
 
     # Area threshold - ignore small contours with area less than 10000 (assume noise)
-    min_contour_area = 50000
+    min_contour_area = 300000
 
     valid_image_counter = file_count
 
