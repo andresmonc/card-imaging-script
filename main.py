@@ -8,7 +8,7 @@ from imutils import contours
 
 def convert(image_file_name, identifier, file_count, attempt, expected_card_count):
     # settings
-    max_attempt_count = 3
+    max_attempt_count = 4
     print("attempt count: " + str(attempt))
 
     if attempt > max_attempt_count:
@@ -68,8 +68,9 @@ def to_grayscale(image_to_grayscale):
 
 
 def dynamic_image_modifier(image_to_modify_name, image_modify_attempt_count):
-    brightnesses = [-10, -10, -10, 20]
-    alpha = 2.0  # Contrast control (1.0-3.0)
+    brightnesses = [-10, -10, -10, 20, -10]
+    alphas = [2.0, 2.0, 2.0, 2.0, 2.5]
+    alpha = alphas[image_modify_attempt_count]  # Contrast control (1.0-3.0) # 2.5 is good # too but backs d
     beta = brightnesses[image_modify_attempt_count]  # Brightness control (0-100)
     modified_image = cv2.convertScaleAbs(cv2.imread(image_to_modify_name), alpha=alpha, beta=beta)
     # cv2.imwrite("brightness.png", modified_image)
@@ -95,7 +96,8 @@ def dynamic_thresholder(gray_image_to_threshold, thresholding_attempt_count):
     elif thresholding_attempt_count == 3:
         threshold_image = cv2.adaptiveThreshold(gray_image_to_threshold, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
                                                 cv2.THRESH_BINARY_INV, 21, 2)
-
+    elif thresholding_attempt_count == 4:
+        _, threshold_image = cv2.threshold(gray_image_to_threshold, threshold_value, max_value, cv2.THRESH_OTSU)
     # cv2.imwrite("threshold.png", threshold_image)
     return threshold_image
 
@@ -106,11 +108,12 @@ def contour_error(contours_to_check, expected_card_count_to_check):
     # don't use this program for 1 picture lol
     if len(contours_to_check) <= 1:
         return True
-    allowed_standard_deviation = 30000
-    contour_areas = []
+    allowed_standard_deviation = 40000
+    bounding_rect_area = []
     for i in range(len(contours_to_check)):
-        contour_areas.append(cv2.contourArea(contours_to_check[i]))
-    std_dev = statistics.stdev(contour_areas)
+        x, y, w, h = cv2.boundingRect(contours_to_check[i])
+        bounding_rect_area.append(w * h)
+    std_dev = statistics.stdev(bounding_rect_area)
     if std_dev > allowed_standard_deviation:
         return True
     return False
