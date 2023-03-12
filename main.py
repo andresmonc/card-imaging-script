@@ -5,7 +5,9 @@ import statistics
 
 from imutils import contours
 
-
+# store the best contour here - if standard dev is less than the current best_contour replace it
+best_contours = ""
+best_contour_std_dev = 0
 def convert(image_file_name, identifier, file_count, attempt, expected_card_count):
     # settings
     max_attempt_count = 4
@@ -27,8 +29,6 @@ def convert(image_file_name, identifier, file_count, attempt, expected_card_coun
 
     # get contours from a threshold image
     cntrs = get_contours(threshold_image)
-    # sort contours top to bottom left to right
-    cntrs = sort_contours(cntrs)
 
     # determine output path based on OS
     path = determine_path()
@@ -37,11 +37,18 @@ def convert(image_file_name, identifier, file_count, attempt, expected_card_coun
     # Set the amount of empty space to add around the cropped image
     empty_space = 30
 
-    if contour_error(cntrs, expected_card_count):
+    if contour_error(cntrs, expected_card_count) and attempt != max_attempt_count:
         print("Failure - attempting new configuration")
         return convert(image_file_name, identifier, file_count, attempt + 1, expected_card_count)
 
+    if attempt != max_attempt_count:
+        return convert(image_file_name, identifier, file_count, attempt + 1, expected_card_count)
+
+    # sort best contours top to bottom left to right
+    global best_contours
+    cntrs = sort_contours(best_contours)
     for i in range(len(cntrs)):
+
         contour = cntrs[i]
         # Find the bounding box of the contour
         bounding_rect = cv2.boundingRect(contour)
@@ -59,6 +66,8 @@ def convert(image_file_name, identifier, file_count, attempt, expected_card_coun
         cv2.imwrite(file_name, rect_with_border)
         # increase count
         valid_image_counter += 1
+    print("Image processed successfully...")
+
 
 
 def to_grayscale(image_to_grayscale):
@@ -108,14 +117,23 @@ def contour_error(contours_to_check, expected_card_count_to_check):
     # don't use this program for 1 picture lol
     if len(contours_to_check) <= 1:
         return True
-    allowed_standard_deviation = 40000
+    allowed_standard_deviation = 43000
     bounding_rect_area = []
     for i in range(len(contours_to_check)):
         x, y, w, h = cv2.boundingRect(contours_to_check[i])
         bounding_rect_area.append(w * h)
     std_dev = statistics.stdev(bounding_rect_area)
+    global best_contours
+    global best_contour_std_dev
     if std_dev > allowed_standard_deviation:
         return True
+    if best_contours == "":
+        best_contours = contours_to_check
+        best_contour_std_dev = std_dev
+    else:
+        if std_dev < best_contour_std_dev:
+            best_contours = contours_to_check
+            best_contour_std_dev = std_dev
     return False
 
 
@@ -219,5 +237,4 @@ if __name__ == '__main__':
     for file in list_input_files():
         convert(os.path.join(app_path, "input", file), a_or_b, output_start_index, 0, int(card_count))
         a_or_b = "b"
-    print("Success!!!")
     input("Press enter to exit...")
