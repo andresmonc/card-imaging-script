@@ -11,7 +11,7 @@ best_contour_std_dev = 0
 def convert(image_file_name, identifier, file_count, attempt, expected_card_count):
     # settings
     max_attempt_count = 4
-    print("attempt count: " + str(attempt))
+    print("Running Configuration: #" + str(attempt))
 
     if attempt > max_attempt_count:
         print("fatal error")
@@ -38,7 +38,7 @@ def convert(image_file_name, identifier, file_count, attempt, expected_card_coun
     empty_space = 30
 
     if contour_error(cntrs, expected_card_count) and attempt != max_attempt_count:
-        print("Failure - attempting new configuration")
+        print("     - configuration results in error - attempting new configuration")
         return convert(image_file_name, identifier, file_count, attempt + 1, expected_card_count)
 
     if attempt != max_attempt_count:
@@ -117,7 +117,7 @@ def contour_error(contours_to_check, expected_card_count_to_check):
     # don't use this program for 1 picture lol
     if len(contours_to_check) <= 1:
         return True
-    allowed_standard_deviation = 43000
+    allowed_standard_deviation = 60000
     bounding_rect_area = []
     for i in range(len(contours_to_check)):
         x, y, w, h = cv2.boundingRect(contours_to_check[i])
@@ -128,12 +128,16 @@ def contour_error(contours_to_check, expected_card_count_to_check):
     if std_dev > allowed_standard_deviation:
         return True
     if best_contours == "":
+        print("     - save results of configuration")
         best_contours = contours_to_check
         best_contour_std_dev = std_dev
     else:
         if std_dev < best_contour_std_dev:
+            print("     - configuration results better than previous results, OVERWRITING")
             best_contours = contours_to_check
             best_contour_std_dev = std_dev
+        else:
+            print("     - configuration results worse than previous results, DISCARDING")
     return False
 
 
@@ -237,4 +241,4 @@ if __name__ == '__main__':
     for file in list_input_files():
         convert(os.path.join(app_path, "input", file), a_or_b, output_start_index, 0, int(card_count))
         a_or_b = "b"
-    input("Press enter to exit...")
+    input("\n\nPress enter to exit...")
