@@ -10,7 +10,7 @@ best_contours = ""
 best_contour_std_dev = 0
 def convert(image_file_name, identifier, file_count, attempt, expected_card_count):
     # settings
-    max_attempt_count = 4
+    max_attempt_count = 5
     print("Running Configuration: #" + str(attempt))
 
     if attempt > max_attempt_count:
@@ -37,7 +37,7 @@ def convert(image_file_name, identifier, file_count, attempt, expected_card_coun
     # Set the amount of empty space to add around the cropped image
     empty_space = 30
 
-    if contour_error(cntrs, expected_card_count) and attempt != max_attempt_count:
+    if contour_error(cntrs, expected_card_count, attempt) and attempt != max_attempt_count:
         print("     - configuration results in error - attempting new configuration")
         return convert(image_file_name, identifier, file_count, attempt + 1, expected_card_count)
 
@@ -77,8 +77,8 @@ def to_grayscale(image_to_grayscale):
 
 
 def dynamic_image_modifier(image_to_modify_name, image_modify_attempt_count):
-    brightnesses = [-10, -10, -10, 20, -10]
-    alphas = [2.0, 2.0, 2.0, 2.0, 2.5]
+    brightnesses = [-10, -10, -10, 20, -10, -100]
+    alphas = [2.0, 2.0, 2.0, 2.0, 2.5, 2.7]
     alpha = alphas[image_modify_attempt_count]  # Contrast control (1.0-3.0) # 2.5 is good # too but backs d
     beta = brightnesses[image_modify_attempt_count]  # Brightness control (0-100)
     modified_image = cv2.convertScaleAbs(cv2.imread(image_to_modify_name), alpha=alpha, beta=beta)
@@ -100,24 +100,27 @@ def dynamic_thresholder(gray_image_to_threshold, thresholding_attempt_count):
     elif thresholding_attempt_count == 1:
         _, threshold_image = cv2.threshold(gray_image_to_threshold, threshold_value, max_value, cv2.THRESH_OTSU)
     elif thresholding_attempt_count == 2:
-        threshold_image = cv2.adaptiveThreshold(gray_image_to_threshold, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        threshold_image = cv2.adaptiveThreshold(gray_image_to_threshold, max_value, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                                 cv2.THRESH_BINARY_INV, 11, 2)
     elif thresholding_attempt_count == 3:
-        threshold_image = cv2.adaptiveThreshold(gray_image_to_threshold, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+        threshold_image = cv2.adaptiveThreshold(gray_image_to_threshold, max_value, cv2.ADAPTIVE_THRESH_MEAN_C,
                                                 cv2.THRESH_BINARY_INV, 21, 2)
     elif thresholding_attempt_count == 4:
         _, threshold_image = cv2.threshold(gray_image_to_threshold, threshold_value, max_value, cv2.THRESH_OTSU)
+    elif thresholding_attempt_count == 5:
+        threshold_image = cv2.adaptiveThreshold(gray_image_to_threshold, max_value, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                                cv2.THRESH_BINARY_INV, 11, 2)
     # cv2.imwrite("threshold.png", threshold_image)
     return threshold_image
 
 
-def contour_error(contours_to_check, expected_card_count_to_check):
+def contour_error(contours_to_check, expected_card_count_to_check, attempt):
     if len(contours_to_check) != expected_card_count_to_check:
         return True
     # don't use this program for 1 picture lol
     if len(contours_to_check) <= 1:
         return True
-    allowed_standard_deviation = 60000
+    allowed_standard_deviation = 90000
     bounding_rect_area = []
     for i in range(len(contours_to_check)):
         x, y, w, h = cv2.boundingRect(contours_to_check[i])
@@ -239,6 +242,10 @@ if __name__ == '__main__':
     a_or_b = "a"
     app_path = determine_path()
     for file in list_input_files():
+        # wipe results from last file
+        best_contours = ""
+        best_contour_std_dev = 0
+
         convert(os.path.join(app_path, "input", file), a_or_b, output_start_index, 0, int(card_count))
         a_or_b = "b"
     input("\n\nPress enter to exit...")
