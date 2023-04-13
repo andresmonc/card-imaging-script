@@ -120,12 +120,17 @@ def contour_error(contours_to_check, expected_card_count_to_check, attempt):
     # don't use this program for 1 picture lol
     if len(contours_to_check) <= 1:
         return True
-    allowed_standard_deviation = 90000
+    allowed_standard_deviation = 200000
     bounding_rect_area = []
     for i in range(len(contours_to_check)):
         x, y, w, h = cv2.boundingRect(contours_to_check[i])
         bounding_rect_area.append(w * h)
+    # possibly make this percentage based to avoid having to keep bumping up this number
+    # mean = statistics.mean(bounding_rect_area)
+    # print("mean: "+str(mean))
     std_dev = statistics.stdev(bounding_rect_area)
+    # print("std_dev: "+str(std_dev))
+    # print("deviation as percentage of average: "+str(std_dev/mean))
     global best_contours
     global best_contour_std_dev
     if std_dev > allowed_standard_deviation:
