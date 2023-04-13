@@ -241,7 +241,7 @@ if __name__ == '__main__':
                                   __/ |                                                                                            
                                  |___/                                                                                             
     """)
-    print("Written by Jaime Moncayo v1.3")
+    print("Written by Jaime Moncayo v1.6")
     card_count = input("Card Count Per Image: ")
     output_start_index = len(list_output_files()) // 2
     a_or_b = "a"
