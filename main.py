@@ -255,7 +255,7 @@ if __name__ == '__main__':
                                   __/ |                                                                 
                                  |___/                                                                  
     """)
-    print("Written by Jaime Moncayo v1.3")
+    print("Written by Jaime Moncayo v1.6")
     card_count = input("Card Count Per Image: ")
     output_start_index = determine_file_index()
     a_or_b = "a"
