@@ -231,12 +231,15 @@ def determine_path():
         application_path = os.path.dirname(__file__)
     return application_path
 
+def sort_key(file_name):
+    numeric_part = re.search(r'\d+', file_name)
+    return int(numeric_part.group()) if numeric_part else 0
 
 def determine_file_index():
     files = list_output_files()
     if len(files) == 0:
         return 0
-    sorted_files = sorted(files)
+    sorted_files = sorted(files, key=sort_key)
     last_file = sorted_files[-1]  # Get the last file in the sorted list
     integer_match = re.search(r'\d+', last_file)
     if "_a_" in last_file:  # Replace ".txt" with the desired suffix
@@ -255,7 +258,7 @@ if __name__ == '__main__':
                                   __/ |                                                                 
                                  |___/                                                                  
     """)
-    print("Written by Jaime Moncayo v1.6")
+    print("Written by Jaime Moncayo v1.8")
     card_count = input("Card Count Per Image: ")
     output_start_index = determine_file_index()
     a_or_b = "a"
