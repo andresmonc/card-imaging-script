@@ -1,3 +1,5 @@
+import re
+
 import cv2
 import os
 import sys
@@ -8,6 +10,8 @@ from imutils import contours
 # store the best contour here - if standard dev is less than the current best_contour replace it
 best_contours = ""
 best_contour_std_dev = 0
+
+
 def convert(image_file_name, identifier, file_count, attempt, expected_card_count):
     # settings
     max_attempt_count = 5
@@ -48,7 +52,6 @@ def convert(image_file_name, identifier, file_count, attempt, expected_card_coun
     global best_contours
     cntrs = sort_contours(best_contours)
     for i in range(len(cntrs)):
-
         contour = cntrs[i]
         # Find the bounding box of the contour
         bounding_rect = cv2.boundingRect(contour)
@@ -67,7 +70,6 @@ def convert(image_file_name, identifier, file_count, attempt, expected_card_coun
         # increase count
         valid_image_counter += 1
     print("Image processed successfully...")
-
 
 
 def to_grayscale(image_to_grayscale):
@@ -216,6 +218,7 @@ def list_input_files():
 def list_output_files():
     output_dir = os.path.join(determine_path(), "output")
     files = os.listdir(output_dir)
+    files = [f for f in files if not f.startswith('.')]  # Exclude hidden files
     return files
 
 
@@ -229,21 +232,32 @@ def determine_path():
     return application_path
 
 
+def determine_file_index():
+    files = list_output_files()
+    if len(files) == 0:
+        return 0
+    sorted_files = sorted(files)
+    last_file = sorted_files[-1]  # Get the last file in the sorted list
+    integer_match = re.search(r'\d+', last_file)
+    if "_a_" in last_file:  # Replace ".txt" with the desired suffix
+        return int(integer_match.group())
+    return int(integer_match.group()) + 1
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     print("""
-  _____                   _              _           _____                      _____                                              
- |  __ \                 | |            ( )         |  __ \                    / ____|                                             
- | |  | |  _   _    ___  | | __  _   _  |/   ___    | |__) |  _ __    ___     | (___     ___    __ _   _ __    _ __     ___   _ __ 
- | |  | | | | | |  / __| | |/ / | | | |     / __|   |  ___/  | '__|  / _ \     \___ \   / __|  / _` | | '_ \  | '_ \   / _ \ | '__|
- | |__| | | |_| | | (__  |   <  | |_| |     \__ \   | |      | |    | (_) |    ____) | | (__  | (_| | | | | | | | | | |  __/ | |   
- |_____/   \__,_|  \___| |_|\_\  \__, |     |___/   |_|      |_|     \___/    |_____/   \___|  \__,_| |_| |_| |_| |_|  \___| |_|   
-                                  __/ |                                                                                            
-                                 |___/                                                                                             
+  _____                   _               _____                                              
+ |  __ \                 | |             / ____|                                             
+ | |  | |  _   _    ___  | | __  _   _  | (___     ___    __ _   _ __    _ __     ___   _ __ 
+ | |  | | | | | |  / __| | |/ / | | | |  \___ \   / __|  / _` | | '_ \  | '_ \   / _ \ | '__|
+ | |__| | | |_| | | (__  |   <  | |_| |  ____) | | (__  | (_| | | | | | | | | | |  __/ | |   
+ |_____/   \__,_|  \___| |_|\_\  \__, | |_____/   \___|  \__,_| |_| |_| |_| |_|  \___| |_|   
+                                  __/ |                                                                 
+                                 |___/                                                                  
     """)
     print("Written by Jaime Moncayo v1.3")
     card_count = input("Card Count Per Image: ")
-    output_start_index = len(list_output_files()) // 2
+    output_start_index = determine_file_index()
     a_or_b = "a"
     app_path = determine_path()
     for file in list_input_files():
